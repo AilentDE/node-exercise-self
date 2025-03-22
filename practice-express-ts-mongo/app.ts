@@ -1,6 +1,10 @@
 import express from "express";
+import cluster from "cluster";
+import os from "os";
 
 import { mongoConnect } from "./src/config/database";
+import ProductRouter from "./src/routes/product";
+import UserRouter from "./src/routes/user";
 
 const app = express();
 const port = 3000;
@@ -20,12 +24,18 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use("/product", ProductRouter);
+app.use("/user", UserRouter);
+
 app.get("/", (req, res) => {
   res.send("The server is working!");
 });
 
 mongoConnect(() => {
   app.listen(port, () => {
+    console.info(
+      `You can ${cluster.isPrimary ? "" : " not"}use ${os.cpus().length} core`
+    );
     console.log(`server is listening on port ${port}`);
   });
 });

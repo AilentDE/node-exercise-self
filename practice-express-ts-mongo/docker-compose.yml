@@ -14,3 +14,19 @@ services:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       timeout: 1s
       retries: 10
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: rootpassword
+      ME_CONFIG_MONGODB_URL: mongodb://root:rootpassword@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: mongoexpress # mongo_express 打開網頁需要輸入的帳號
+      ME_CONFIG_BASICAUTH_PASSWORD: mongoexpress # mongo_express 打開網頁需要輸入的密碼
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true" # 允許adminstrator使用自己的帳密登入mongo_express

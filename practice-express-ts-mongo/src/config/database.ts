@@ -4,7 +4,6 @@ import { databaseSettings } from "./settings";
 
 const url = `mongodb://${databaseSettings.user}:${databaseSettings.password}@${databaseSettings.host}/?authSource=admin`;
 const client = new MongoClient(url);
-const dbName = databaseSettings.database;
 
 let _db: Db | undefined;
 
