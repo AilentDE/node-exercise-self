@@ -8,38 +8,41 @@ type ProductType = {
   price: number;
   description: string;
   imageUrl: string;
+  userId?: string;
 };
 // type ProductCreate = Omit<ProductType, 'id'>
 
 class Product {
-  id?: ObjectId;
+  _id?: ObjectId;
   title: string;
   price: number;
   description: string;
   imageUrl: string;
+  userId?: ObjectId;
 
   constructor(productData: ProductType) {
-    if (productData.id) this.id = new ObjectId(productData.id);
+    if (productData.id) this._id = new ObjectId(productData.id);
     this.title = productData.title;
     this.price = productData.price;
     this.description = productData.description;
     this.imageUrl = productData.imageUrl;
+    this.userId = new ObjectId(productData.userId);
   }
 
   async save() {
     const db = getDb();
+
     try {
       let productDocumentInfo;
-      if (this.id) {
+      if (this._id) {
         productDocumentInfo = await db
           .collection("products")
-          .updateOne({ _id: this.id }, { $set: this });
+          .updateOne({ _id: this._id }, { $set: this });
       } else {
         productDocumentInfo = await db.collection("products").insertOne(this);
-        this.id = productDocumentInfo.insertedId;
+        this._id = productDocumentInfo.insertedId;
       }
 
-      console.log(productDocumentInfo);
       return this;
     } catch (err) {
       throw new Error(`Fail to create product: ${err}`);
@@ -48,6 +51,7 @@ class Product {
 
   static fetchAll = async () => {
     const db = getDb();
+
     try {
       const products = await db
         .collection("products")
@@ -71,7 +75,7 @@ class Product {
     try {
       const product = await db
         .collection("products")
-        .findOne({ _id: new ObjectId(productId) });
+        .findOne<Product>({ _id: new ObjectId(productId) });
 
       if (!product) {
         return null;

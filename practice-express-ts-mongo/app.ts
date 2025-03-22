@@ -4,7 +4,7 @@ import os from "os";
 
 import { mongoConnect } from "./src/config/database";
 import ProductRouter from "./src/routes/product";
-import UserRouter from "./src/routes/user";
+import UserRouter, { activityRouter } from "./src/routes/user";
 
 const app = express();
 const port = 3000;
@@ -26,6 +26,7 @@ app.use((req, res, next) => {
 
 app.use("/product", ProductRouter);
 app.use("/user", UserRouter);
+app.use("/user", activityRouter);
 
 app.get("/", (req, res) => {
   res.send("The server is working!");
