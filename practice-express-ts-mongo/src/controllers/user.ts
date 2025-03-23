@@ -49,6 +49,16 @@ const addProductToCart = async (req: Request, res: Response) => {
   });
 };
 
+const removeProductFromCart = async (req: Request, res: Response) => {
+  const productId = req.params.productId;
+  await req.currentUser.removeProductFromCart(productId);
+
+  res.json({
+    message: "Remove product from cart successfully",
+    user: req.currentUser,
+  });
+};
+
 const getCart = async (req: Request, res: Response) => {
   const cart = await req.currentUser.getCart();
 
@@ -60,5 +70,6 @@ export default {
   findUserById,
   createProduct,
   addProductToCart,
+  removeProductFromCart,
   getCart,
 };

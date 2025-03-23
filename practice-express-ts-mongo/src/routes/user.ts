@@ -46,4 +46,9 @@ activityRouter.post(
   UserController.addProductToCart
 );
 
+activityRouter.post(
+  "/:userId/removeProductFromCart/:productId",
+  UserController.removeProductFromCart
+);
+
 activityRouter.get("/:userId/getCart", UserController.getCart);

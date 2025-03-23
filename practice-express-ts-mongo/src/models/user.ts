@@ -96,15 +96,32 @@ class User {
       }
       await db
         .collection("users")
-        .updateOne(
-          { _id: new ObjectId(this._id) },
-          { $set: { cart: updatedCart } }
-        );
+        .updateOne({ _id: this._id }, { $set: { cart: updatedCart } });
 
       this.cart = updatedCart;
     } catch (err) {
       throw new Error(
         `Fail to add Product ${productId} into user's cart: ${err}`
+      );
+    }
+  }
+
+  async removeProductFromCart(productId: string) {
+    const db = getDb();
+
+    const updatedCart = { ...this.cart };
+    updatedCart.items = this.cart.items.filter(
+      (item) => item.productId.toString() !== productId
+    );
+    try {
+      await db
+        .collection("users")
+        .updateOne({ _id: this._id }, { $set: { cart: updatedCart } });
+
+      this.cart = updatedCart;
+    } catch (err) {
+      throw new Error(
+        `Fail to remove Product ${productId} from user's cart: ${err}`
       );
     }
   }
