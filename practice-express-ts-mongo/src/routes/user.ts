@@ -51,4 +51,8 @@ activityRouter.post(
   UserController.removeProductFromCart
 );
 
+activityRouter.post("/:userId/checkoutOrder", UserController.checkoutOrder);
+
 activityRouter.get("/:userId/getCart", UserController.getCart);
+
+activityRouter.get("/:userId/orders", UserController.getOrders);

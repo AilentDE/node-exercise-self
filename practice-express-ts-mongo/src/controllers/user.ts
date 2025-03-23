@@ -59,10 +59,32 @@ const removeProductFromCart = async (req: Request, res: Response) => {
   });
 };
 
+const checkoutOrder = async (req: Request, res: Response) => {
+  if (req.currentUser.cart.items.length === 0) {
+    res.json({
+      message: "User's cart have nothing to checkout",
+      user: req.currentUser,
+    });
+    return;
+  }
+  await req.currentUser.checkoutOrder();
+
+  res.json({
+    message: "User's order has been checkout",
+    user: req.currentUser,
+  });
+};
+
 const getCart = async (req: Request, res: Response) => {
   const cart = await req.currentUser.getCart();
 
   res.json({ message: "Got user's cart", cart });
+};
+
+const getOrders = async (req: Request, res: Response) => {
+  const orders = await req.currentUser.getUserOrders();
+
+  res.json({ message: "Got user's orders", orders });
 };
 
 export default {
@@ -71,5 +93,7 @@ export default {
   createProduct,
   addProductToCart,
   removeProductFromCart,
+  checkoutOrder,
   getCart,
+  getOrders,
 };

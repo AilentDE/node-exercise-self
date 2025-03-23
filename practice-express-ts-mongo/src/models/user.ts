@@ -126,6 +126,42 @@ class User {
     }
   }
 
+  async checkoutOrder() {
+    const db = getDb();
+
+    const cartItems = await this.getCart();
+    const order = {
+      items: cartItems,
+      user: { _id: this._id, name: this.name, dataType: "snapshot" },
+    };
+
+    try {
+      await db.collection("orders").insertOne(order);
+      this.cart.items = [];
+      await db
+        .collection("users")
+        .updateOne({ _id: this._id }, { $set: { cart: { items: [] } } });
+    } catch (err) {
+      throw new Error(`Fail to checkout the order: ${err}`);
+    }
+  }
+
+  async getUserOrders() {
+    const db = getDb();
+
+    try {
+      const orders = await db
+        .collection("orders")
+        .find({ "user._id": this._id })
+        .sort({ _id: -1 })
+        .toArray();
+
+      return orders;
+    } catch (err) {
+      throw new Error(`Fail to fetch user's orders: ${err}`);
+    }
+  }
+
   static fetchById = async (userId: string) => {
     const db = getDb();
     try {
