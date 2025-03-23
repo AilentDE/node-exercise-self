@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 
 import { getDb } from "../config/database";
+import Product from "./product";
 
 type CartItemType = {
   productId: ObjectId;
@@ -51,7 +52,27 @@ class User {
 
       return this;
     } catch (err) {
-      throw Error(`Fail to update user: ${err}`);
+      throw new Error(`Fail to update user: ${err}`);
+    }
+  }
+
+  async getCart() {
+    const db = getDb();
+
+    try {
+      const items = (await db
+        .collection("products")
+        .find({ _id: { $in: this.cart.items.map((item) => item.productId) } })
+        .toArray()) as Product[];
+
+      return items.map((item) => ({
+        ...item,
+        quantity: this.cart.items.find(
+          (i) => i.productId.toString() === item._id?.toString()
+        )?.quantity,
+      }));
+    } catch (err) {
+      throw new Error(`Fail th fetch user's cart: ${err}`);
     }
   }
 

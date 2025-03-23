@@ -5,6 +5,14 @@ import User from "../models/user";
 
 const router = express.Router();
 
+declare global {
+  namespace Express {
+    interface Request {
+      currentUser: User;
+    }
+  }
+}
+
 router.post("/", UserController.createUser);
 router.get("/:userId", UserController.findUserById);
 
@@ -23,6 +31,8 @@ activityRouter.use("/:userId", async (req, resizeBy, next) => {
       resizeBy.status(404).json({ message: "User not found" });
       return;
     }
+    req.currentUser = new User({ ...user, id: user._id?.toString() });
+
     next();
   } catch (err) {
     next(err);
@@ -35,3 +45,5 @@ activityRouter.post(
   "/:userId/addProductToCart/:productId",
   UserController.addProductToCart
 );
+
+activityRouter.get("/:userId/getCart", UserController.getCart);

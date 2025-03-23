@@ -40,20 +40,25 @@ const createProduct = async (req: Request, res: Response) => {
 };
 
 const addProductToCart = async (req: Request, res: Response) => {
-  const userId = req.params.userId;
   const productId = req.params.productId;
-  const user = await User.fetchById(userId);
+  await req.currentUser.addProductToCart(productId);
 
-  if (!user) {
-    res.status(401).json({ message: "User not found" });
-    return;
-  }
-
-  const userModel = new User({ ...user, id: user._id?.toString() });
-
-  await userModel.addProductToCart(productId);
-
-  res.json({ message: "Add product to cart successfully", user });
+  res.json({
+    message: "Add product to cart successfully",
+    user: req.currentUser,
+  });
 };
 
-export default { createUser, findUserById, createProduct, addProductToCart };
+const getCart = async (req: Request, res: Response) => {
+  const cart = await req.currentUser.getCart();
+
+  res.json({ message: "Got user's cart", cart });
+};
+
+export default {
+  createUser,
+  findUserById,
+  createProduct,
+  addProductToCart,
+  getCart,
+};
