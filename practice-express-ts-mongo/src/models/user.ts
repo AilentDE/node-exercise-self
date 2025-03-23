@@ -65,6 +65,17 @@ class User {
         .find({ _id: { $in: this.cart.items.map((item) => item.productId) } })
         .toArray()) as Product[];
 
+      if (items.length !== this.cart.items.length) {
+        const updatedCart = { ...this.cart };
+        updatedCart.items = updatedCart.items.filter((i) =>
+          items.map((new_item) => new_item._id).includes(i.productId)
+        );
+        await db
+          .collection("users")
+          .updateOne({ _id: this._id }, { $set: { cart: updatedCart } });
+        this.cart = updatedCart;
+      }
+
       return items.map((item) => ({
         ...item,
         quantity: this.cart.items.find(
