@@ -1,0 +1,40 @@
+import { Router } from "express";
+
+import UserController from "../controllers/user";
+import UserModel, { IUser } from "../models/user";
+
+const router = Router();
+export const activityRouter = Router();
+
+// User object
+router.post("/", UserController.createUser);
+router.get("/", UserController.findUsers);
+
+// User action
+declare global {
+  namespace Express {
+    interface Request {
+      currentUser: IUser;
+    }
+  }
+}
+activityRouter.use("/:userId", async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    req.currentUser = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+activityRouter.post("/:userId/createProduct", UserController.createProduct);
+
+export default router;
