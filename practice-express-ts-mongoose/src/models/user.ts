@@ -1,24 +1,8 @@
-import { Schema, model, Types, Document } from "mongoose";
+import { Schema, model } from "mongoose";
 
-interface ICartItem {
-  productId: Types.ObjectId;
-  quantity: number;
-}
+import { IUser, IProductWithId, IUserMethods, UserModelType } from "./typing";
 
-// 定義購物車的介面
-interface ICart {
-  items: ICartItem[];
-}
-
-// 定義使用者的介面
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  avatarUrl: string;
-  cart?: ICart | null;
-}
-
-const userSchema = new Schema({
+const userSchema = new Schema<IUser, UserModelType, IUserMethods>({
   name: {
     type: String,
     required: true,
@@ -48,7 +32,23 @@ const userSchema = new Schema({
     ],
   },
 });
+userSchema.method("addToCart", function addToCart(product: IProductWithId) {
+  const cartProductIndex = this.cart!.items.findIndex(
+    (cp) => cp.productId.toString() === product._id.toString()
+  );
 
-const UserModel = model("User", userSchema);
+  if (cartProductIndex >= 0) {
+    this.cart!.items[cartProductIndex].quantity += 1;
+  } else {
+    this.cart!.items.push({
+      productId: product._id,
+      quantity: 1,
+    });
+  }
+
+  return this.save();
+});
+
+const UserModel = model<IUser, UserModelType>("User", userSchema);
 
 export default UserModel;

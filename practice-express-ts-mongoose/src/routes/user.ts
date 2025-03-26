@@ -1,7 +1,8 @@
 import { Router } from "express";
 
 import UserController from "../controllers/user";
-import UserModel, { IUser } from "../models/user";
+import UserModel from "../models/user";
+import { IUser, IUserMethods } from "../models/typing";
 
 const router = Router();
 export const activityRouter = Router();
@@ -14,7 +15,7 @@ router.get("/", UserController.findUsers);
 declare global {
   namespace Express {
     interface Request {
-      currentUser: IUser;
+      currentUser: IUser & IUserMethods;
     }
   }
 }
@@ -36,5 +37,9 @@ activityRouter.use("/:userId", async (req, res, next) => {
 });
 
 activityRouter.post("/:userId/createProduct", UserController.createProduct);
+activityRouter.post(
+  "/:userId/addProductToCart/:productId",
+  UserController.addProductToCart
+);
 
 export default router;

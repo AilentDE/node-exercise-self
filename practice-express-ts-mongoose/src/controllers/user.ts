@@ -37,4 +37,17 @@ const createProduct = async (req: Request, res: Response) => {
   res.status(201).json({ message: "Product created successfully", product });
 };
 
-export default { createUser, findUsers, createProduct };
+const addProductToCart = async (req: Request, res: Response) => {
+  const { productId } = req.params;
+  const product = await ProductModel.findById(productId);
+
+  if (!product) {
+    res.status(404).json({ message: "Product not found", productId });
+    return;
+  }
+
+  await req.currentUser.addToCart(product);
+  res.json({ message: "Added product to cart", cart: req.currentUser.cart });
+};
+
+export default { createUser, findUsers, createProduct, addProductToCart };
