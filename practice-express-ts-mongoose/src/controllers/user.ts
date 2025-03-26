@@ -30,7 +30,7 @@ const createProduct = async (req: Request, res: Response) => {
     price: parseFloat(faker.commerce.price({ min: 10, max: 200 })),
     description: faker.word.words(20),
     imageUrl: faker.image.url(),
-    userId: req.currentUser._id,
+    userId: req.currentUser,
   });
   await product.save();
 
