@@ -2,7 +2,7 @@ import { Types, Document, Model } from "mongoose";
 
 // User
 interface ICartItem {
-  productId: Types.ObjectId;
+  productId: Types.ObjectId | IProduct;
   quantity: number;
 }
 
@@ -33,6 +33,26 @@ export interface IProductWithId extends IProduct {
 // Methods
 export interface IUserMethods {
   addToCart(product: IProductWithId): void;
+  clearCart(): void;
 }
 
 export type UserModelType = Model<IUser, {}, IUserMethods>;
+
+// Order
+
+interface IOrderItem {
+  product: IProductWithId;
+  quantity: number;
+}
+
+interface IOrderUser {
+  _id: Types.ObjectId;
+  name: string;
+}
+
+export interface IOrder extends Document {
+  items: IOrderItem[];
+  user: IOrderUser;
+}
+
+export type OrderModelType = Model<IOrder>;

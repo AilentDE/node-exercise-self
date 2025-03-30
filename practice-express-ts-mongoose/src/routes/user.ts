@@ -46,5 +46,7 @@ activityRouter.post(
   "/:userId/removeProductFromCart/:productId",
   UserController.deleteProductFromCart
 );
+activityRouter.post("/:userId/checkoutOrder", UserController.checkoutOrder);
+activityRouter.get("/:userId/orders", UserController.getOrders);
 
 export default router;

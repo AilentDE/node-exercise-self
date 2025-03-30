@@ -3,6 +3,8 @@ import { faker } from "@faker-js/faker";
 
 import UserModel from "../models/user";
 import ProductModel from "../models/product";
+import OrderModel from "../models/orer";
+import { IProduct } from "../models/typing";
 
 const createUser = async (req: Request, res: Response) => {
   const user = new UserModel({
@@ -72,6 +74,53 @@ const deleteProductFromCart = async (req: Request, res: Response) => {
   });
 };
 
+const checkoutOrder = async (req: Request, res: Response) => {
+  const cart = await req.currentUser.populate("cart.items.productId");
+
+  if (cart.cart?.items.length === 0) {
+    res.status(400).json({ message: "Cart is empty" });
+    return;
+  }
+
+  const order = new OrderModel({
+    user: {
+      _id: req.currentUser._id,
+      name: req.currentUser.name,
+    },
+    items: cart.cart!.items.map((item) => {
+      const product = item.productId as IProduct;
+      return {
+        product: {
+          _id: product._id,
+          title: product.title,
+          price: product.price,
+          description: product.description,
+          imageUrl: product.imageUrl,
+          userId: product.userId,
+        },
+        quantity: item.quantity,
+      };
+    }),
+  });
+
+  await order.save();
+
+  await req.currentUser.clearCart();
+
+  res.json({ message: "Order created successfully", order });
+};
+
+const getOrders = async (req: Request, res: Response) => {
+  const orders = await OrderModel.find({ "user._id": req.currentUser._id });
+
+  const populatedOrders = await OrderModel.populate(orders, {
+    path: "items.product.userId",
+    select: "-cart -email",
+  });
+
+  res.json({ message: "User orders", orders: populatedOrders });
+};
+
 export default {
   createUser,
   findUsers,
@@ -79,4 +128,6 @@ export default {
   addProductToCart,
   getCart,
   deleteProductFromCart,
+  checkoutOrder,
+  getOrders,
 };

@@ -48,6 +48,10 @@ userSchema.method("addToCart", function addToCart(product: IProductWithId) {
 
   return this.save();
 });
+userSchema.method("clearCart", function clearCart() {
+  this.cart = { items: [] };
+  return this.save();
+});
 
 const UserModel = model<IUser, UserModelType>("User", userSchema);
 
