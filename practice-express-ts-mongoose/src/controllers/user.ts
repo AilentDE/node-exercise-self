@@ -56,10 +56,27 @@ const getCart = async (req: Request, res: Response) => {
   res.json({ message: "Cart", cart: cart.cart });
 };
 
+const deleteProductFromCart = async (req: Request, res: Response) => {
+  const { productId } = req.params;
+  const updatedCart = req.currentUser.cart!.items.filter(
+    (p) => p.productId.toString() !== productId
+  );
+  req.currentUser.cart = { items: updatedCart };
+  await req.currentUser.save();
+
+  const cart = await req.currentUser.populate("cart.items.productId");
+
+  res.json({
+    message: "Product deleted from cart",
+    cart: cart.cart,
+  });
+};
+
 export default {
   createUser,
   findUsers,
   createProduct,
   addProductToCart,
   getCart,
+  deleteProductFromCart,
 };
