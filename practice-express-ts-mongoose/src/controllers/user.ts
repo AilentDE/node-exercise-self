@@ -50,4 +50,16 @@ const addProductToCart = async (req: Request, res: Response) => {
   res.json({ message: "Added product to cart", cart: req.currentUser.cart });
 };
 
-export default { createUser, findUsers, createProduct, addProductToCart };
+const getCart = async (req: Request, res: Response) => {
+  const cart = await req.currentUser.populate("cart.items.productId");
+
+  res.json({ message: "Cart", cart: cart.cart });
+};
+
+export default {
+  createUser,
+  findUsers,
+  createProduct,
+  addProductToCart,
+  getCart,
+};

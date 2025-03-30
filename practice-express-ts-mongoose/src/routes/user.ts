@@ -41,5 +41,6 @@ activityRouter.post(
   "/:userId/addProductToCart/:productId",
   UserController.addProductToCart
 );
+activityRouter.get("/:userId/getCart", UserController.getCart);
 
 export default router;
