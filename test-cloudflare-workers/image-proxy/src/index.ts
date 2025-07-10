@@ -14,11 +14,14 @@ export default {
 
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const objectKey = pathname.replace(/^\/+/, "");
 
     switch (request.method) {
+      case "OPTIONS":
+        return new Response("OK", { status: 200 });
+
       case "GET":
         // R2 key = path of the image (e.g. /images.jpg -> images.jpg)
-        const objectKey = pathname.replace(/^\/+/, "");
         const object = await bucket.get(objectKey);
         if (!object || !object.body) {
           return new Response("Not Found", { status: 404 });
@@ -65,6 +68,10 @@ export default {
             "Content-Length": outputImage.length.toString(),
           },
         });
+
+      case "PUT":
+        await bucket.put(objectKey, request.body);
+        return new Response(`Put ${objectKey} successfully!`);
 
       default:
         return new Response("Method Not Allowed", { status: 405 });
