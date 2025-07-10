@@ -3,7 +3,7 @@ import { PhotonImage, SamplingFilter, resize } from "@cf-wasm/photon";
 export default {
   async fetch(request: Request, env: any) {
     // Get the secret from the secrets store
-    const TokenKey = (await env.IMAGE_PROXY_SECRET.get()) as SecretsStoreSecret;
+    const TokenKey = (await env.IMAGE_PROXY_SECRET.get()) as string;
     if (!TokenKey) {
       return new Response("Unauthorized", { status: 401 });
     }
@@ -71,10 +71,47 @@ export default {
 
       case "PUT":
         await bucket.put(objectKey, request.body);
-        return new Response(`Put ${objectKey} successfully!`);
+        const signature = await signHMACSHA256(TokenKey, objectKey);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            signature,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
       default:
         return new Response("Method Not Allowed", { status: 405 });
     }
   },
 };
+
+async function signHMACSHA256(key: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+
+  // 將密鑰轉為 CryptoKey
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  // 使用 CryptoKey 對 message 進行 HMAC-SHA1 簽章
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    cryptoKey,
+    enc.encode(message)
+  );
+
+  // 將 ArrayBuffer 轉為 Hex 字串
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
