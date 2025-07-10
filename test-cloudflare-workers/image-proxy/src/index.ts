@@ -70,7 +70,28 @@ export default {
         });
 
       case "PUT":
-        await bucket.put(objectKey, request.body);
+        const requestBody = await request.arrayBuffer();
+        if (!requestBody || requestBody.byteLength === 0) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "No data provided",
+              detail: {
+                contentType: request.headers.get("Content-Type"),
+                contentLength: request.headers.get("Content-Length"),
+              },
+            }),
+            {
+              status: 400,
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        }
+
+        const bufferData = new Uint8Array(requestBody);
+        await bucket.put(objectKey, bufferData);
         const signature = await signHMACSHA256(TokenKey, objectKey);
 
         return new Response(
