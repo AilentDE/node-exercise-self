@@ -80,20 +80,31 @@ export default {
             });
           }
 
-          timeKeeper.restart("lock");
-
           // 使用 KV 作為鎖機制，避免重複處理
           const lockKey = `lock:${newKey}`;
-          const lockValue = Date.now().toString();
+          const lockValue = `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 9)}`; // 唯一標識符
 
-          // 嘗試設置鎖，如果失敗則等待
+          timeKeeper.restart("lock");
+
+          // 嘗試設置鎖
           let lockAcquired = false;
           try {
             await kv.put(lockKey, lockValue, {
               expirationTtl: 60,
             });
-            lockAcquired = true;
-            timeKeeper.end("success");
+
+            // 驗證鎖是否真的是自己設置的
+            const verifyLock = await kv.get(lockKey);
+            if (verifyLock === lockValue) {
+              lockAcquired = true;
+              timeKeeper.end("success");
+            } else {
+              // 鎖被其他請求搶走了
+              console.log("Lock was acquired by another request");
+              timeKeeper.end("failed");
+            }
           } catch (error) {
             // 鎖設置失敗，可能是因為其他請求正在處理
             console.log(
@@ -106,7 +117,6 @@ export default {
             timeKeeper.restart("wait");
             // 等待其他請求完成處理
             for (let i = 0; i < 30; i++) {
-              // 增加等待時間到 3 秒
               await new Promise((resolve) => setTimeout(resolve, 100));
 
               // 檢查是否已經處理完成
@@ -126,12 +136,19 @@ export default {
                 // 鎖已釋放，但圖片還沒生成，可能是處理失敗
                 // 重新嘗試獲取鎖
                 try {
-                  await kv.put(lockKey, lockValue, {
+                  const newLockValue = `${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substring(2, 9)}`;
+                  await kv.put(lockKey, newLockValue, {
                     expirationTtl: 60,
                   });
-                  lockAcquired = true;
-                  timeKeeper.end("success");
-                  break;
+
+                  const verifyNewLock = await kv.get(lockKey);
+                  if (verifyNewLock === newLockValue) {
+                    lockAcquired = true;
+                    timeKeeper.end("success");
+                    break;
+                  }
                 } catch (error) {
                   // 繼續等待
                   timeKeeper.end("failed");
