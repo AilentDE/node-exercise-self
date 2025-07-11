@@ -26,6 +26,22 @@ class TimeKeeper {
   }
 }
 
+const ALLOWED_ORIGIN = "https://localhost:3000";
+
+// 新增 helper 函數來添加 CORS headers
+function addCorsHeaders(response: Response): Response {
+  const newHeaders = new Headers(response.headers);
+  newHeaders.set("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  newHeaders.set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS");
+  newHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
 export default {
   async fetch(request: Request, env: any) {
     // Debug
@@ -54,13 +70,20 @@ export default {
 
     switch (request.method) {
       case "OPTIONS":
-        return new Response("OK", { status: 200 });
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+            "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Max-Age": "86400",
+          },
+        });
 
       case "GET":
         // 檢查原始圖片是否存在
         const object = await bucket.head(objectKey);
         if (!object) {
-          return new Response("Not Found", { status: 404 });
+          return addCorsHeaders(new Response("Not Found", { status: 404 }));
         }
 
         // 檢查是否需要 resize
@@ -73,11 +96,13 @@ export default {
           // 檢查是否已經存在
           objectBody = await bucket.get(newKey);
           if (objectBody) {
-            return new Response(objectBody.body, {
-              headers: {
-                "Content-Type": "image/webp",
-              },
-            });
+            return addCorsHeaders(
+              new Response(objectBody.body, {
+                headers: {
+                  "Content-Type": "image/webp",
+                },
+              })
+            );
           }
 
           // 使用 KV 作為鎖機制，避免重複處理
@@ -123,11 +148,13 @@ export default {
               objectBody = await bucket.get(newKey);
               if (objectBody) {
                 timeKeeper.end();
-                return new Response(objectBody.body, {
-                  headers: {
-                    "Content-Type": "image/webp",
-                  },
-                });
+                return addCorsHeaders(
+                  new Response(objectBody.body, {
+                    headers: {
+                      "Content-Type": "image/webp",
+                    },
+                  })
+                );
               }
 
               // 檢查鎖是否還在
@@ -157,7 +184,9 @@ export default {
             }
 
             if (!lockAcquired) {
-              return new Response("Processing timeout", { status: 408 });
+              return addCorsHeaders(
+                new Response("Processing timeout", { status: 408 })
+              );
             }
           }
 
@@ -165,11 +194,13 @@ export default {
             // 再次檢查是否已被其他請求處理
             objectBody = await bucket.get(newKey);
             if (objectBody) {
-              return new Response(objectBody.body, {
-                headers: {
-                  "Content-Type": "image/webp",
-                },
-              });
+              return addCorsHeaders(
+                new Response(objectBody.body, {
+                  headers: {
+                    "Content-Type": "image/webp",
+                  },
+                })
+              );
             }
 
             // 執行 resize
@@ -184,42 +215,49 @@ export default {
             await bucket.put(newKey, outputImage);
             timeKeeper.end();
 
-            return new Response(outputImage, {
-              headers: {
-                "Content-Type": "image/webp",
-              },
-            });
+            return addCorsHeaders(
+              new Response(outputImage, {
+                headers: {
+                  "Content-Type": "image/webp",
+                },
+              })
+            );
           } finally {
             // 釋放鎖
             await kv.delete(lockKey);
           }
         } else {
           objectBody = await bucket.get(objectKey);
-          return new Response(objectBody!.body, {
-            headers: {
-              "Content-Type": object.httpMetadata?.contentType || "image/jpeg",
-            },
-          });
+          return addCorsHeaders(
+            new Response(objectBody!.body, {
+              headers: {
+                "Content-Type":
+                  object.httpMetadata?.contentType || "image/jpeg",
+              },
+            })
+          );
         }
 
       case "PUT":
         const requestBody = await request.arrayBuffer();
         if (!requestBody || requestBody.byteLength === 0) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: "No data provided",
-              detail: {
-                contentType: request.headers.get("Content-Type"),
-                contentLength: request.headers.get("Content-Length"),
-              },
-            }),
-            {
-              status: 400,
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
+          return addCorsHeaders(
+            new Response(
+              JSON.stringify({
+                success: false,
+                error: "No data provided",
+                detail: {
+                  contentType: request.headers.get("Content-Type"),
+                  contentLength: request.headers.get("Content-Length"),
+                },
+              }),
+              {
+                status: 400,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            )
           );
         }
 
@@ -227,20 +265,24 @@ export default {
         await bucket.put(objectKey, bufferData);
         const signature = await signHMACSHA256(TokenKey, objectKey);
 
-        return new Response(
-          JSON.stringify({
-            success: true,
-            signature,
-          }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({
+              success: true,
+              signature,
+            }),
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          )
         );
 
       default:
-        return new Response("Method Not Allowed", { status: 405 });
+        return addCorsHeaders(
+          new Response("Method Not Allowed", { status: 405 })
+        );
     }
   },
 };
