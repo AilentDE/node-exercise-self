@@ -2,6 +2,12 @@ import { PhotonImage, SamplingFilter, resize } from "@cf-wasm/photon";
 
 export default {
   async fetch(request: Request, env: any) {
+    // Debug Variables
+    console.log("timeKeeper start");
+    const timeKeeper = new Map<string, number>();
+    let start = performance.now();
+    let end = performance.now();
+
     // Get the secret from the secrets store
     const TokenKey = (await env.IMAGE_PROXY_SECRET.get()) as string;
     if (!TokenKey) {
@@ -21,11 +27,23 @@ export default {
         return new Response("OK", { status: 200 });
 
       case "GET":
+        // debug
+        end = performance.now();
+        console.log("base process", end - start);
+        timeKeeper.set("base process", end - start);
+        start = performance.now();
+
         // R2 key = path of the image (e.g. /images.jpg -> images.jpg)
         const object = await bucket.get(objectKey);
         if (!object || !object.body) {
           return new Response("Not Found", { status: 404 });
         }
+
+        // debug
+        end = performance.now();
+        console.log("fetch object", end - start);
+        timeKeeper.set("fetch object", end - start);
+        start = performance.now();
 
         const imageArrayBuffer = await object.arrayBuffer();
         const imageUint8Array = new Uint8Array(imageArrayBuffer);
@@ -58,9 +76,24 @@ export default {
           SamplingFilter.Lanczos3
         );
 
+        // debug
+        end = performance.now();
+        console.log("resize image", end - start);
+        timeKeeper.set("resize image", end - start);
+        start = performance.now();
+
         const outputImage = resizedImage.get_bytes_webp();
         resizedImage.free();
         image.free();
+
+        // debug
+        end = performance.now();
+        console.log("free image", end - start);
+        timeKeeper.set("free image", end - start);
+        console.log(
+          "timeKeepers:",
+          JSON.stringify(Object.fromEntries(timeKeeper))
+        );
 
         return new Response(outputImage, {
           headers: {
