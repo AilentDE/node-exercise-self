@@ -17,9 +17,14 @@ export default {
     if (!bucket) {
       return new Response("Internal Server Error", { status: 500 });
     }
+    const kv = env.IMAGE_PROXY_KV as KVNamespace;
+    if (!kv) {
+      return new Response("Internal Server Error", { status: 500 });
+    }
 
     const url = new URL(request.url);
     const pathname = url.pathname;
+    // R2 key = path of the image (e.g. /images.jpg -> images.jpg)
     const objectKey = pathname.replace(/^\/+/, "");
 
     switch (request.method) {
@@ -33,74 +38,120 @@ export default {
         timeKeeper.set("base process", end - start);
         start = performance.now();
 
-        // R2 key = path of the image (e.g. /images.jpg -> images.jpg)
-        const object = await bucket.get(objectKey);
-        if (!object || !object.body) {
+        // 檢查原始圖片是否存在
+        const object = await bucket.head(objectKey);
+        if (!object) {
           return new Response("Not Found", { status: 404 });
         }
 
-        // debug
-        end = performance.now();
-        console.log("fetch object", end - start);
-        timeKeeper.set("fetch object", end - start);
-        start = performance.now();
-
-        const imageArrayBuffer = await object.arrayBuffer();
-        const imageUint8Array = new Uint8Array(imageArrayBuffer);
-        const image = PhotonImage.new_from_byteslice(imageUint8Array);
-        const imageWidth = image.get_width();
-        const imageHeight = image.get_height();
-
+        // 檢查是否需要 resize
         let width = url.searchParams.get("w") || undefined;
-        let height = url.searchParams.get("h") || undefined;
-        // override the width and height if it's larger than the image
-        if (width && parseInt(width) > imageWidth) {
-          width = imageWidth.toString();
+        let objectBody: R2ObjectBody | null = null;
+        if (width) {
+          width = parseInt(width).toString();
+          const newKey = `${objectKey}-${width}`;
+
+          // 檢查是否已經存在
+          objectBody = await bucket.get(newKey);
+          if (objectBody) {
+            return new Response(objectBody.body, {
+              headers: {
+                "Content-Type": "image/webp",
+              },
+            });
+          }
+
+          // 使用 KV 作為鎖機制，避免重複處理
+          const lockKey = `lock:${newKey}`;
+          const lockValue = Date.now().toString();
+
+          // 嘗試設置鎖，如果失敗則等待
+          let lockAcquired = false;
+          try {
+            await kv.put(lockKey, lockValue, {
+              expirationTtl: 60,
+            });
+            lockAcquired = true;
+          } catch (error) {
+            // 鎖設置失敗，可能是因為其他請求正在處理
+            console.log(
+              "Lock acquisition failed, waiting for other request to complete"
+            );
+          }
+
+          if (!lockAcquired) {
+            // 等待其他請求完成處理
+            for (let i = 0; i < 30; i++) {
+              // 增加等待時間到 3 秒
+              await new Promise((resolve) => setTimeout(resolve, 100));
+
+              // 檢查是否已經處理完成
+              objectBody = await bucket.get(newKey);
+              if (objectBody) {
+                return new Response(objectBody.body, {
+                  headers: {
+                    "Content-Type": "image/webp",
+                  },
+                });
+              }
+
+              // 檢查鎖是否還在
+              const existingLock = await kv.get(lockKey);
+              if (!existingLock) {
+                // 鎖已釋放，但圖片還沒生成，可能是處理失敗
+                // 重新嘗試獲取鎖
+                try {
+                  await kv.put(lockKey, lockValue, {
+                    expirationTtl: 60,
+                  });
+                  lockAcquired = true;
+                  break;
+                } catch (error) {
+                  // 繼續等待
+                }
+              }
+            }
+
+            if (!lockAcquired) {
+              return new Response("Processing timeout", { status: 408 });
+            }
+          }
+
+          try {
+            // 再次檢查是否已被其他請求處理
+            objectBody = await bucket.get(newKey);
+            if (objectBody) {
+              return new Response(objectBody.body, {
+                headers: {
+                  "Content-Type": "image/webp",
+                },
+              });
+            }
+
+            // 執行 resize
+            objectBody = await bucket.get(objectKey);
+            const resizedImage = await resizeR2Object(objectBody!, width);
+            const outputImage = resizedImage.get_bytes_webp();
+            resizedImage.free();
+
+            await bucket.put(newKey, outputImage);
+            return new Response(outputImage, {
+              headers: {
+                "Content-Type": "image/webp",
+              },
+            });
+          } finally {
+            // 釋放鎖
+            await kv.delete(lockKey);
+          }
+        } else {
+          objectBody = await bucket.get(objectKey);
+          return new Response(objectBody!.body, {
+            headers: {
+              "Content-Type": object.httpMetadata?.contentType || "image/jpeg",
+            },
+          });
         }
-        if (height && parseInt(height) > imageHeight) {
-          height = imageHeight.toString();
-        }
-
-        // calculate the ratio of the width and height
-        const ratio = width
-          ? parseInt(width) / imageWidth
-          : height
-          ? parseInt(height) / imageHeight
-          : 1;
-
-        // resize the image
-        const resizedImage = resize(
-          image,
-          imageWidth * ratio,
-          imageHeight * ratio,
-          SamplingFilter.Lanczos3
-        );
-
-        // debug
-        end = performance.now();
-        console.log("resize image", end - start);
-        timeKeeper.set("resize image", end - start);
-        start = performance.now();
-
-        const outputImage = resizedImage.get_bytes_webp();
-        resizedImage.free();
-        image.free();
-
-        // debug
-        end = performance.now();
-        console.log("free image", end - start);
-        timeKeeper.set("free image", end - start);
-        console.log(
-          "timeKeepers:",
-          JSON.stringify(Object.fromEntries(timeKeeper))
-        );
-
-        return new Response(outputImage, {
-          headers: {
-            "Content-Type": "image/webp",
-            "Content-Length": outputImage.length.toString(),
-          },
-        });
 
       case "PUT":
         const requestBody = await request.arrayBuffer();
@@ -168,4 +219,20 @@ async function signHMACSHA256(key: string, message: string): Promise<string> {
   return Array.from(new Uint8Array(signature))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+async function resizeR2Object(objectBody: R2ObjectBody, width: string) {
+  const imageArrayBuffer = await objectBody.arrayBuffer();
+  const imageUint8Array = new Uint8Array(imageArrayBuffer);
+  const image = PhotonImage.new_from_byteslice(imageUint8Array);
+  const imageWidth = image.get_width();
+  const imageHeight = image.get_height();
+  const ratio = parseInt(width) / imageWidth;
+  const resizedImage = resize(
+    image,
+    imageWidth * ratio,
+    imageHeight * ratio,
+    SamplingFilter.Lanczos3
+  );
+  return resizedImage;
 }

@@ -22,6 +22,12 @@
       "binding": "IMAGE_PROXY_BUCKET",
       "bucket_name": "private-test-bucket"
     }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "IMAGE_PROXY_KV",
+      "id": "ba9158bfc2664d27921ad121bb53413f"
+    }
   ]
   /**
    * Smart Placement
