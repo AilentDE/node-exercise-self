@@ -1,12 +1,35 @@
 import { PhotonImage, SamplingFilter, resize } from "@cf-wasm/photon";
 
+class TimeKeeper {
+  private startTime: number;
+  private endTime: number;
+  private taskName: string;
+
+  constructor() {
+    this.startTime = performance.now();
+    this.endTime = performance.now();
+    this.taskName = "init";
+  }
+
+  restart(taskName: string) {
+    this.taskName = taskName;
+    this.startTime = performance.now();
+  }
+
+  end(memo?: string) {
+    this.endTime = performance.now();
+    console.log(
+      `${this.taskName} ${memo ? `(${memo})` : ""} took ${
+        this.endTime - this.startTime
+      }ms`
+    );
+  }
+}
+
 export default {
   async fetch(request: Request, env: any) {
-    // Debug Variables
-    console.log("timeKeeper start");
-    const timeKeeper = new Map<string, number>();
-    let start = performance.now();
-    let end = performance.now();
+    // Debug
+    const timeKeeper = new TimeKeeper();
 
     // Get the secret from the secrets store
     const TokenKey = (await env.IMAGE_PROXY_SECRET.get()) as string;
@@ -27,17 +50,13 @@ export default {
     // R2 key = path of the image (e.g. /images.jpg -> images.jpg)
     const objectKey = pathname.replace(/^\/+/, "");
 
+    timeKeeper.end();
+
     switch (request.method) {
       case "OPTIONS":
         return new Response("OK", { status: 200 });
 
       case "GET":
-        // debug
-        end = performance.now();
-        console.log("base process", end - start);
-        timeKeeper.set("base process", end - start);
-        start = performance.now();
-
         // 檢查原始圖片是否存在
         const object = await bucket.head(objectKey);
         if (!object) {
@@ -61,6 +80,8 @@ export default {
             });
           }
 
+          timeKeeper.restart("lock");
+
           // 使用 KV 作為鎖機制，避免重複處理
           const lockKey = `lock:${newKey}`;
           const lockValue = Date.now().toString();
@@ -72,14 +93,17 @@ export default {
               expirationTtl: 60,
             });
             lockAcquired = true;
+            timeKeeper.end("success");
           } catch (error) {
             // 鎖設置失敗，可能是因為其他請求正在處理
             console.log(
               "Lock acquisition failed, waiting for other request to complete"
             );
+            timeKeeper.end("failed");
           }
 
           if (!lockAcquired) {
+            timeKeeper.restart("wait");
             // 等待其他請求完成處理
             for (let i = 0; i < 30; i++) {
               // 增加等待時間到 3 秒
@@ -88,6 +112,7 @@ export default {
               // 檢查是否已經處理完成
               objectBody = await bucket.get(newKey);
               if (objectBody) {
+                timeKeeper.end();
                 return new Response(objectBody.body, {
                   headers: {
                     "Content-Type": "image/webp",
@@ -105,9 +130,11 @@ export default {
                     expirationTtl: 60,
                   });
                   lockAcquired = true;
+                  timeKeeper.end("success");
                   break;
                 } catch (error) {
                   // 繼續等待
+                  timeKeeper.end("failed");
                 }
               }
             }
@@ -130,11 +157,16 @@ export default {
 
             // 執行 resize
             objectBody = await bucket.get(objectKey);
+            timeKeeper.restart("resize");
             const resizedImage = await resizeR2Object(objectBody!, width);
             const outputImage = resizedImage.get_bytes_webp();
             resizedImage.free();
+            timeKeeper.end();
 
+            timeKeeper.restart("put");
             await bucket.put(newKey, outputImage);
+            timeKeeper.end();
+
             return new Response(outputImage, {
               headers: {
                 "Content-Type": "image/webp",
