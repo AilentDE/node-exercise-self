@@ -26,6 +26,12 @@ practice-cloudflare-workers/
 └── README.md          # This File
 ```
 
+## Screenshot
+
+Below is a screenshot of the Image Proxy Worker running in the Cloudflare Workers dashboard:
+
+<img src="public/worker_result.png" alt="Image Proxy Worker Log Screenshot" width="600"/>
+
 ## Main Project: Image Proxy Worker
 
 ### Overview
