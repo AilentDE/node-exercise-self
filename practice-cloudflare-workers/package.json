@@ -1,0 +1,17 @@
+{
+  "name": "cloudflare-workers-manager",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers 專案管理工具",
+  "scripts": {
+    "init": "wrangler init",
+    "init:hello": "cd hello && npm install",
+    "dev:hello": "cd hello && npm run dev",
+    "deploy:hello": "cd hello && npm run deploy",
+    "type-check:hello": "cd hello && npm run type-check"
+  },
+  "author": "D.E.",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.24.0"
+  }
+}
