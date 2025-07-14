@@ -9,7 +9,7 @@
         "type-check": "tsc --noEmit"
     },
     "author": "D.E.",
-    "license": "ISC",
+    "license": "MIT",
     "description": "Image Proxy Cloudflare Worker",
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20250710.0",
