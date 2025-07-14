@@ -42,6 +42,18 @@ function addCorsHeaders(response: Response): Response {
   });
 }
 
+// 新增 helper 函數來添加 Cache-Control headers
+const CACHE_TTL = 60 * 60 * 2; // 2 hours
+function addCacheHeaders(response: Response): Response {
+  const newHeaders = new Headers(response.headers);
+  newHeaders.set("Cache-Control", `public, max-age=${CACHE_TTL}`);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
 export default {
   async fetch(request: Request, env: any) {
     // Debug
@@ -80,6 +92,22 @@ export default {
         });
 
       case "GET":
+        // 檢查 response cache
+        const imageCache = await caches.open("private:r2-cache");
+        const searchParams = url.searchParams;
+
+        // 創建標準化的 cache key
+        const baseUrl = url.origin + url.pathname;
+        let width = searchParams.get("w");
+        const cacheKey = width ? `${baseUrl}?w=${width}` : baseUrl;
+
+        console.log("Looking for cache key:", cacheKey);
+        const cachedResponse = await imageCache.match(cacheKey);
+        if (cachedResponse) {
+          console.log("cache hit for key:", cacheKey);
+          return addCorsHeaders(addCacheHeaders(cachedResponse));
+        }
+
         // 檢查原始圖片是否存在
         const object = await bucket.head(objectKey);
         if (!object) {
@@ -87,7 +115,6 @@ export default {
         }
 
         // 檢查是否需要 resize
-        let width = url.searchParams.get("w") || undefined;
         let objectBody: R2ObjectBody | null = null;
         if (width) {
           width = parseInt(width).toString();
@@ -96,13 +123,13 @@ export default {
           // 檢查是否已經存在
           objectBody = await bucket.get(newKey);
           if (objectBody) {
-            return addCorsHeaders(
-              new Response(objectBody.body, {
-                headers: {
-                  "Content-Type": "image/webp",
-                },
-              })
-            );
+            const response = new Response(objectBody.body, {
+              headers: {
+                "Content-Type": "image/webp",
+              },
+            });
+            await imageCache.put(cacheKey, response.clone());
+            return addCorsHeaders(addCacheHeaders(response));
           }
 
           // 使用 KV 作為鎖機制，避免重複處理
@@ -148,13 +175,13 @@ export default {
               objectBody = await bucket.get(newKey);
               if (objectBody) {
                 timeKeeper.end();
-                return addCorsHeaders(
-                  new Response(objectBody.body, {
-                    headers: {
-                      "Content-Type": "image/webp",
-                    },
-                  })
-                );
+                const response = new Response(objectBody.body, {
+                  headers: {
+                    "Content-Type": "image/webp",
+                  },
+                });
+                await imageCache.put(cacheKey, response.clone());
+                return addCorsHeaders(addCacheHeaders(response));
               }
 
               // 檢查鎖是否還在
@@ -194,13 +221,13 @@ export default {
             // 再次檢查是否已被其他請求處理
             objectBody = await bucket.get(newKey);
             if (objectBody) {
-              return addCorsHeaders(
-                new Response(objectBody.body, {
-                  headers: {
-                    "Content-Type": "image/webp",
-                  },
-                })
-              );
+              const response = new Response(objectBody.body, {
+                headers: {
+                  "Content-Type": "image/webp",
+                },
+              });
+              await imageCache.put(cacheKey, response.clone());
+              return addCorsHeaders(addCacheHeaders(response));
             }
 
             // 執行 resize
@@ -215,27 +242,26 @@ export default {
             await bucket.put(newKey, outputImage);
             timeKeeper.end();
 
-            return addCorsHeaders(
-              new Response(outputImage, {
-                headers: {
-                  "Content-Type": "image/webp",
-                },
-              })
-            );
+            const response = new Response(outputImage, {
+              headers: {
+                "Content-Type": "image/webp",
+              },
+            });
+            await imageCache.put(cacheKey, response.clone());
+            return addCorsHeaders(addCacheHeaders(response));
           } finally {
             // 釋放鎖
             await kv.delete(lockKey);
           }
         } else {
           objectBody = await bucket.get(objectKey);
-          return addCorsHeaders(
-            new Response(objectBody!.body, {
-              headers: {
-                "Content-Type":
-                  object.httpMetadata?.contentType || "image/jpeg",
-              },
-            })
-          );
+          const response = new Response(objectBody!.body, {
+            headers: {
+              "Content-Type": object.httpMetadata?.contentType || "image/jpeg",
+            },
+          });
+          await imageCache.put(cacheKey, response.clone());
+          return addCorsHeaders(addCacheHeaders(response));
         }
 
       case "PUT":
