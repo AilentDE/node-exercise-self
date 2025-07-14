@@ -12,7 +12,7 @@
         "delete": "wrangler delete"
     },
     "author": "D.E.",
-    "license": "ISC",
+    "license": "MIT",
     "description": "Hello Cloudflare Worker",
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20250710.0",

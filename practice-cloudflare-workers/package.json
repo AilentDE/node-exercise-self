@@ -10,7 +10,7 @@
     "type-check:hello": "cd hello && npm run type-check"
   },
   "author": "D.E.",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "wrangler": "^4.24.0"
   }
