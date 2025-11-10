@@ -16,6 +16,7 @@ declare module 'motia' {
     'SetNextFeedingReminder': EventHandler<{ petId: string; enqueuedAt: number }, never>
     'GetPet': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'GetPets': ApiRouteHandler<Record<string, unknown>, unknown, never>
+    'DeletionReaper': CronHandler<never>
     'DeletePet': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'CreatePet': ApiRouteHandler<{ name: string; species: 'dog' | 'cat' | 'bird' | 'other'; ageMonths: unknown }, unknown, { topic: 'feeding-reminder.enqueued'; data: { petId: string; enqueuedAt: number } }>
     'ProcessGreeting': EventHandler<{ timestamp: string; appName: string; greetingPrefix: string; requestId: string }, never>

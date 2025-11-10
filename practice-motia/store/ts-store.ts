@@ -87,4 +87,9 @@ export class TSStore {
     await fs.writeFile(STORE_PATH, JSON.stringify(store, null, 2));
     return true;
   }
+
+  static async findAdopedPetsToDelete(): Promise<PetCreated[]> {
+    const store = await this.readStore();
+    return store.filter((pet) => pet.status === "adopted");
+  }
 }

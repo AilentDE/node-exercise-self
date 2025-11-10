@@ -31,6 +31,10 @@
         "x": -306,
         "y": 458
       },
+      "steps/pets/deletion-reaper.cron.step.ts": {
+        "x": 567,
+        "y": 390
+      },
       "steps/pets/delete-pet.step.ts": {
         "x": -9,
         "y": 469
