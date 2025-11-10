@@ -13,7 +13,11 @@ export const config: ApiRouteConfig = {
 export const handler: Handlers["DeletePet"] = async (req, { logger }) => {
   // In a real application, this would be a database call
   // e.g., const deleted = await db.pets.delete(req.pathParams.id)
-  const deleted = await TSStore.remove(req.pathParams.id);
+  // const deleted = await TSStore.remove(req.pathParams.id);
+  // Delete pet with cron job
+  const deleted = await TSStore.update(req.pathParams.id, {
+    status: "deleted",
+  });
 
   if (!deleted) {
     return { status: 404, body: { message: "Pet not found" } };
