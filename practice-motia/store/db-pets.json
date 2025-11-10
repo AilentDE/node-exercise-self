@@ -1,0 +1,12 @@
+[
+  {
+    "name": "uat-pet",
+    "species": "dog",
+    "ageMonths": 4,
+    "id": "b8edcd95-a4ac-42e5-b7de-eb860e29664d",
+    "status": "under_treatment",
+    "createdAt": 1762764378077,
+    "notes": "Welcome to our pet store! We'll take great care of this pet.",
+    "nextFeedingAt": 1762850778353
+  }
+]

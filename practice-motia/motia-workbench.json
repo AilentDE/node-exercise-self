@@ -1,0 +1,52 @@
+[
+  {
+    "id": "hello-world-flow",
+    "config": {
+      "steps/hello/process-greeting.step.ts": {
+        "x": 451,
+        "y": -24
+      },
+      "steps/hello/hello-api.step.ts": {
+        "x": -27,
+        "y": -154
+      }
+    }
+  },
+  {
+    "id": "PetManagement",
+    "config": {
+      "steps/pets/update-pet.step.ts": {
+        "x": -3,
+        "y": 152
+      },
+      "steps/pets/set-next-feeding-reminder.job.step.ts": {
+        "x": 566,
+        "y": 208
+      },
+      "steps/pets/pet-pet.step.ts": {
+        "x": -306,
+        "y": 296
+      },
+      "steps/pets/pet-lifecycle-orchestrator.step.ts": {
+        "x": 700,
+        "y": 635
+      },
+      "steps/pets/get-pets.step.ts": {
+        "x": -306,
+        "y": 458
+      },
+      "steps/pets/deletion-reaper.cron.step.ts": {
+        "x": 993,
+        "y": 345
+      },
+      "steps/pets/delete-pet.step.ts": {
+        "x": -9,
+        "y": 469
+      },
+      "steps/pets/create-pet.step.ts": {
+        "x": 0,
+        "y": 304
+      }
+    }
+  }
+]
