@@ -9,7 +9,7 @@ export const config: EventConfig = {
     "Background job that sets next feeding reminder and adds welcome notes",
   // Subscribe to the event emitted by CreatePet
   subscribes: ["feeding-reminder.enqueued"],
-  emits: [],
+  emits: ["lc.feeding.reminder.completed"],
   flows: ["PetManagement"],
   input: z.object({
     petId: z.string(),
@@ -19,7 +19,7 @@ export const config: EventConfig = {
 
 export const handler: Handlers["SetNextFeedingReminder"] = async (
   input,
-  { logger }
+  { emit, logger }
 ) => {
   const { petId, enqueuedAt } = input;
 
@@ -56,6 +56,18 @@ export const handler: Handlers["SetNextFeedingReminder"] = async (
         petId,
         notes: updatedPet.notes?.substring(0, 50) + "...",
         nextFeedingAt: new Date(nextFeedingAt).toISOString(),
+      });
+    }
+
+    if (emit) {
+      await emit({
+        topic: "lc.feeding.reminder.completed",
+        data: {
+          petId,
+          event: "feeding.reminder.completed",
+          requestedStatus: "in_quarantine",
+          automatic: false,
+        },
       });
     }
 

@@ -14,7 +14,7 @@ export const config: ApiRouteConfig = {
   path: "/pets",
   method: "POST",
   // Declare what events this endpoint can emit
-  emits: ["feeding-reminder.enqueued"],
+  emits: ["feeding-reminder.enqueued", "lc.pet.created"],
   bodySchema: createPetSchema,
   flows: ["PetManagement"],
 };
@@ -27,6 +27,19 @@ export const handler: Handlers["CreatePet"] = async (req, { emit, logger }) => {
   const pet = await TSStore.create(data);
 
   logger.info("Pet created", { petId: pet.id });
+
+  // Actually no rules yet, just to trigger the lifecycle orchestrator
+  if (emit) {
+    await emit({
+      topic: "lc.pet.created",
+      data: {
+        petId: pet.id,
+        event: "pet.created",
+        requestedStatus: "in_quarantine",
+        automatic: false,
+      },
+    });
+  }
 
   // Emit event to trigger background job
   if (emit) {

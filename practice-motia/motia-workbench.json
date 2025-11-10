@@ -27,13 +27,17 @@
         "x": -306,
         "y": 296
       },
+      "steps/pets/pet-lifecycle-orchestrator.step.ts": {
+        "x": 700,
+        "y": 635
+      },
       "steps/pets/get-pets.step.ts": {
         "x": -306,
         "y": 458
       },
       "steps/pets/deletion-reaper.cron.step.ts": {
-        "x": 567,
-        "y": 390
+        "x": 993,
+        "y": 345
       },
       "steps/pets/delete-pet.step.ts": {
         "x": -9,

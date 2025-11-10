@@ -1,30 +1,12 @@
 [
   {
-    "name": "second",
+    "name": "uat-pet",
     "species": "dog",
-    "ageMonths": 3,
-    "id": "5b4c6c0f-cd42-4b83-aa2c-5377b7f24294",
-    "status": "available",
-    "createdAt": 1762742955945
-  },
-  {
-    "name": "uat-pet2",
-    "species": "bird",
-    "ageMonths": 3,
-    "id": "b2ac07e9-148b-4de6-9858-0d138ffae996",
-    "status": "pending",
-    "createdAt": 1762746081685,
-    "notes": "Welcome to our pet store! We'll take great care of this pet.",
-    "nextFeedingAt": 1762832481928
-  },
-  {
-    "name": "uat-pet3",
-    "species": "bird",
     "ageMonths": 4,
-    "id": "270334f0-7192-4922-a584-b027ce902f2e",
-    "status": "pending",
-    "createdAt": 1762746260369,
+    "id": "b8edcd95-a4ac-42e5-b7de-eb860e29664d",
+    "status": "under_treatment",
+    "createdAt": 1762764378077,
     "notes": "Welcome to our pet store! We'll take great care of this pet.",
-    "nextFeedingAt": 1762832660568
+    "nextFeedingAt": 1762850778353
   }
 ]
