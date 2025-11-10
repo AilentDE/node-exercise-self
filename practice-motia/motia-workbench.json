@@ -16,16 +16,24 @@
     "id": "PetManagement",
     "config": {
       "steps/pets/update-pet.step.ts": {
-        "x": 0,
-        "y": 0
+        "x": -3,
+        "y": 152
+      },
+      "steps/pets/set-next-feeding-reminder.job.step.ts": {
+        "x": 566,
+        "y": 208
       },
       "steps/pets/pet-pet.step.ts": {
-        "x": 3,
-        "y": 0
+        "x": -306,
+        "y": 296
       },
       "steps/pets/get-pets.step.ts": {
-        "x": 7,
-        "y": 152
+        "x": -306,
+        "y": 458
+      },
+      "steps/pets/delete-pet.step.ts": {
+        "x": -9,
+        "y": 469
       },
       "steps/pets/create-pet.step.ts": {
         "x": 0,

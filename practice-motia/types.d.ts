@@ -13,10 +13,11 @@ declare module 'motia' {
 
   interface Handlers {
     'UpdatePet': ApiRouteHandler<{ name?: string; status?: 'available' | 'pending' | 'adopted'; ageMonths?: unknown }, unknown, never>
+    'SetNextFeedingReminder': EventHandler<{ petId: string; enqueuedAt: number }, never>
     'GetPet': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'GetPets': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'DeletePet': ApiRouteHandler<Record<string, unknown>, unknown, never>
-    'CreatePet': ApiRouteHandler<{ name: string; species: 'dog' | 'cat' | 'bird' | 'other'; ageMonths: unknown }, unknown, never>
+    'CreatePet': ApiRouteHandler<{ name: string; species: 'dog' | 'cat' | 'bird' | 'other'; ageMonths: unknown }, unknown, { topic: 'feeding-reminder.enqueued'; data: { petId: string; enqueuedAt: number } }>
     'ProcessGreeting': EventHandler<{ timestamp: string; appName: string; greetingPrefix: string; requestId: string }, never>
     'HelloAPI': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { message: string; status: string; appName: string }>, { topic: 'process-greeting'; data: { timestamp: string; appName: string; greetingPrefix: string; requestId: string } }>
   }

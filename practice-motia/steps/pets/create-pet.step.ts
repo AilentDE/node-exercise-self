@@ -13,12 +13,13 @@ export const config: ApiRouteConfig = {
   type: "api",
   path: "/pets",
   method: "POST",
-  emits: [],
+  // Declare what events this endpoint can emit
+  emits: ["feeding-reminder.enqueued"],
   bodySchema: createPetSchema,
   flows: ["PetManagement"],
 };
 
-export const handler: Handlers["CreatePet"] = async (req, { logger }) => {
+export const handler: Handlers["CreatePet"] = async (req, { emit, logger }) => {
   const data = createPetSchema.parse(req.body);
 
   // In a real application, this would be a database call
@@ -26,6 +27,17 @@ export const handler: Handlers["CreatePet"] = async (req, { logger }) => {
   const pet = await TSStore.create(data);
 
   logger.info("Pet created", { petId: pet.id });
+
+  // Emit event to trigger background job
+  if (emit) {
+    await emit({
+      topic: "feeding-reminder.enqueued",
+      data: {
+        petId: pet.id,
+        enqueuedAt: Date.now(),
+      },
+    });
+  }
 
   return { status: 201, body: pet };
 };

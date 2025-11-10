@@ -12,6 +12,8 @@ interface PetUpdate {
   name?: string;
   status?: string;
   ageMonths?: number;
+  notes?: string;
+  nextFeedingAt?: number;
 }
 
 type PetCreated = {
@@ -21,6 +23,8 @@ type PetCreated = {
   status: string;
   ageMonths: number;
   createdAt: number;
+  notes?: string;
+  nextFeedingAt?: number;
 };
 
 export class TSStore {
