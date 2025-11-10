@@ -16,7 +16,7 @@ interface PetUpdate {
   nextFeedingAt?: number;
 }
 
-type PetCreated = {
+export type PetCreated = {
   id: string;
   name: string;
   species: string;
@@ -47,7 +47,7 @@ export class TSStore {
     const preparePet: PetCreated = {
       ...data,
       id: crypto.randomUUID().toString(),
-      status: "pending",
+      status: "new",
       createdAt: Date.now(),
     };
     store.push(preparePet);
@@ -88,8 +88,8 @@ export class TSStore {
     return true;
   }
 
-  static async findAdopedPetsToDelete(): Promise<PetCreated[]> {
+  static async findDeletedPetsToRemove(): Promise<PetCreated[]> {
     const store = await this.readStore();
-    return store.filter((pet) => pet.status === "adopted");
+    return store.filter((pet) => pet.status === "deleted");
   }
 }

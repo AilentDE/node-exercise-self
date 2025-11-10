@@ -4,7 +4,20 @@ import { TSStore } from "../../store/ts-store";
 
 const updatePetSchema = z.object({
   name: z.string().min(1).optional(),
-  status: z.enum(["available", "pending", "adopted"]).optional(),
+  status: z
+    .enum([
+      "new",
+      "in_quarantine",
+      "healthy",
+      "available",
+      "pending",
+      "adopted",
+      "ill",
+      "under_treatment",
+      "recovered",
+      "deleted",
+    ])
+    .optional(),
   ageMonths: z.number().int().min(0).optional(),
 });
 

@@ -16,9 +16,9 @@ export const handler: Handlers["DeletionReaper"] = async ({ logger }) => {
   }
 
   try {
-    const petsToReap = await TSStore.findAdopedPetsToDelete();
+    const petsToRemove = await TSStore.findDeletedPetsToRemove();
 
-    if (petsToReap.length === 0) {
+    if (petsToRemove.length === 0) {
       if (logger) {
         logger.info("✅ Deletion Reaper completed - no pets to purge");
       }
@@ -29,7 +29,7 @@ export const handler: Handlers["DeletionReaper"] = async ({ logger }) => {
 
     let deletedCount = 0;
 
-    for (const pet of petsToReap) {
+    for (const pet of petsToRemove) {
       const success = await TSStore.remove(pet.id);
 
       if (success) {
@@ -56,9 +56,9 @@ export const handler: Handlers["DeletionReaper"] = async ({ logger }) => {
 
     if (logger) {
       logger.info("✅ Deletion Reaper completed", {
-        totalScanned: petsToReap.length,
+        totalScanned: petsToRemove.length,
         deletedCount,
-        failedCount: petsToReap.length - deletedCount,
+        failedCount: petsToRemove.length - deletedCount,
       });
     }
 
